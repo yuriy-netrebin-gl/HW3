@@ -39,6 +39,7 @@ public class KafkaConsumerTopTenBitcoin {
         final int giveUp = 100;
         int noRecordsCount = 0;
 
+        List<JSONObject> list = new ArrayList<>();
         while (true) {
             final ConsumerRecords<Long, String> consumerRecords = consumer.poll(Duration.ofSeconds(1));
 
@@ -47,20 +48,19 @@ public class KafkaConsumerTopTenBitcoin {
                 if (noRecordsCount > giveUp) break;
                 else continue;
             }
-            List<JSONObject> list = new ArrayList<>();
             consumerRecords.forEach(record -> list.add(new JSONObject(record.value())));
-            System.out.println("***** Top 10 bitcoin transactions based on price field (descending) *****");
-            List<JSONObject> filteredList = list.stream()
-                    .filter(r -> !r.isEmpty() && !r.isNull("data") && !r.getJSONObject("data").isEmpty())
-                    .sorted(Comparator.comparing(r -> r.getJSONObject("data").getDouble("price")))
-                    .collect(Collectors.toList());
-            Collections.reverse(filteredList);
-            AtomicInteger i = new AtomicInteger(1);
-            filteredList.stream()
-                    .limit(10)
-                    .forEach(r -> System.out.printf("%d. %s%n", i.getAndIncrement(), r));
             consumer.commitAsync();
         }
+        System.out.println("***** Top 10 bitcoin transactions based on price field (descending) *****");
+        List<JSONObject> filteredList = list.stream()
+                .filter(r -> !r.isEmpty() && !r.isNull("data") && !r.getJSONObject("data").isEmpty())
+                .sorted(Comparator.comparing(r -> r.getJSONObject("data").getDouble("price")))
+                .collect(Collectors.toList());
+        Collections.reverse(filteredList);
+        AtomicInteger i = new AtomicInteger(1);
+        filteredList.stream()
+                .limit(10)
+                .forEach(r -> System.out.printf("%d. %s%n", i.getAndIncrement(), r));
         System.out.println("DONE");
     }
 
